@@ -1,5 +1,7 @@
 ﻿using filmHub.data;
+using filmHub.Data.Static;
 using filmHub.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace filmHub.Data
 {
@@ -309,6 +311,45 @@ namespace filmHub.Data
                         },
                     });
                     context.SaveChanges();
+                }
+            }
+        }
+        public static async Task SeedUsersAndRolesAsync(IApplicationBuilder applicationBuilder)
+        {
+            using (var serviceScope = applicationBuilder.ApplicationServices.CreateScope())
+            {
+                //Roles
+                var roleManager = serviceScope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                if (!await roleManager.RoleExistsAsync(UserRoles.Admin)) await roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
+                if (!await roleManager.RoleExistsAsync(UserRoles.User)) await roleManager.CreateAsync(new IdentityRole(UserRoles.User));
+
+                //Users
+                var userManager = serviceScope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+                var adminUser = await userManager.FindByEmailAsync("admin@filmhub.com");
+                if (adminUser == null)
+                {
+                    var newAdminUser = new ApplicationUser()
+                    {
+                        FullName = "Admin User",
+                        UserName = "admin",
+                        Email = "admin@filmhub.com",
+                        EmailConfirmed = true
+                    };
+                    await userManager.CreateAsync(newAdminUser, "pAssword123456@");
+                    await userManager.AddToRoleAsync(newAdminUser, UserRoles.Admin);
+                }
+                var appUser = await userManager.FindByEmailAsync("user@filmhub.com");
+                if (appUser == null)
+                {
+                    var newAppUser = new ApplicationUser()
+                    {
+                        FullName = "App User",
+                        UserName = "appuser",
+                        Email = "user@filmhub.com",
+                        EmailConfirmed = true
+                    };
+                    await userManager.CreateAsync(newAppUser, "pAssword123456@");
+                    await userManager.AddToRoleAsync(newAppUser, UserRoles.User);
                 }
             }
         }
